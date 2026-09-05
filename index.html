@@ -92,7 +92,7 @@
     <button class="btn-secundario btn-rojo" onclick="mostrarPantalla('pantalla-principal')">Volver</button>
   </div>
 
-  <!-- PANTALLA 4: Módulo de Liquidación -->
+  <!-- PANTALLA 4: Módulo de Liquidación con 4 Empresas -->
   <div id="pantalla-liquidacion" class="oculto">
     <h2>💼 Liquidación de Deudas</h2>
     <p style="text-align: left; margin-bottom: 8px;">Selecciona el convenio:</p>
@@ -154,7 +154,7 @@
 </div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbxVfBhAkmUVvsjA-bAdI3Vhz_Ywu2uZIq5S6zcuJs1PZWfNkUx4ByZWMiPn32vB5XO-7A/exec";
+  const API_URL = "URL_DE_TU_APPS_SCRIPT_AQUI";
 
   let empresaConvenioActual = "Tu Empresa Principal";
 
@@ -226,7 +226,6 @@
       console.error("Error al registrar", e);
     }
 
-    // Cargar datos en los campos de impresión
     document.getElementById('tk-guia').innerText = "#" + numGuia;
     document.getElementById('tk-destino').innerText = "DEST: " + destino;
     document.getElementById('tk-remitente').innerText = document.getElementById('remitente').value;

@@ -18,11 +18,12 @@
     table { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
 
+    /* Estilos específicos para impresoras térmicas y tickets */
     @media print {
       body * { visibility: hidden; }
       #zona-impresion, #zona-impresion * { visibility: visible; }
-      #zona-impresion { position: absolute; left: 0; top: 0; width: 80mm; padding: 0; font-family: monospace; font-size: 14px; }
-      .destino-gigante { font-size: 28px; font-weight: bold; text-transform: uppercase; margin: 10px 0; text-align: center; }
+      #zona-impresion { position: absolute; left: 0; top: 0; width: 80mm; padding: 0; font-family: monospace; font-size: 13px; }
+      .destino-gigante { font-size: 26px; font-weight: bold; text-transform: uppercase; margin: 5px 0; text-align: center; }
       hr { border-top: 1px dashed black; }
     }
   </style>
@@ -40,7 +41,7 @@
   <!-- PANTALLA 2: Menú Principal -->
   <div id="pantalla-principal" class="oculto">
     <h2>📍 Panel de Operaciones</h2>
-    <p>Operador activo | Impresora SAT: 🟢 Conectada</p>
+    <p>Operador activo | Impresora: 🟢 Lista (Navegador)</p>
     <button class="btn-grande" onclick="mostrarPantalla('pantalla-formulario')">➕ Crear Nueva Guía</button>
     <button class="btn-grande" style="background-color: #17a2b8;" onclick="mostrarPantalla('pantalla-liquidacion')">💰 Módulo de Liquidación</button>
     <button class="btn-grande btn-rojo" onclick="cerrarSesion()">Cerrar Sesión</button>
@@ -61,7 +62,7 @@
     <input type="text" id="ciudad-destino" placeholder="Ciudad de Destino" class="input-form">
     <input type="number" id="valor-total" placeholder="Valor Total Flete ($)" class="input-form">
     <input type="text" id="notas" placeholder="Notas o Novedades (Opcional)" class="input-form">
-    <button class="btn-secundario" onclick="guardarEnvio()">💾 Guardar y Generar Etiquetas</button>
+    <button class="btn-secundario" onclick="guardarEnvio()">💾 Guardar y Elegir Tipo de Impresión</button>
     <button class="btn-secundario btn-rojo" onclick="mostrarPantalla('pantalla-principal')">Volver</button>
   </div>
 
@@ -80,31 +81,40 @@
     <button class="btn-secundario btn-rojo" onclick="mostrarPantalla('pantalla-principal')">Volver</button>
   </div>
 
-  <!-- PANTALLA 5: Centro de Impresión -->
+  <!-- PANTALLA 5: Centro de Impresión Universal (Dos Opciones) -->
   <div id="pantalla-impresion" class="oculto">
-    <div id="zona-impresion">
-      <h3 style="text-align: center; margin-bottom: 0;">ENVÍOS NACIONALES</h3>
-      <p style="text-align: center; margin-top: 5px;">Guía: <strong id="tk-guia"></strong></p>
-      <hr>
-      <div class="destino-gigante" id="tk-destino"></div>
-      <hr>
-      <p><strong>De:</strong> <span id="tk-remitente"></span></p>
-      <p><strong>Para:</strong> <span id="tk-destinatario"></span></p>
-      <hr>
-      <p><strong>Flete Total:</strong> $<span id="tk-valor"></span></p>
-      <br><br>
-      <p style="text-align: center;">Firma: __________________</p>
+    <h2>🖨️ Centro de Impresión</h2>
+    <p>Elige el formato que deseas imprimir:</p>
+    
+    <button class="btn-secundario" onclick="imprimirGuiaCompleta()">📄 Imprimir Guía de Seguimiento (Completa)</button>
+    <button class="btn-secundario" style="background-color: #ffc107; color: black;" onclick="imprimirSticker()">🏷️ Imprimir Sticker de Producto (Caja)</button>
+    <button class="btn-secundario btn-rojo" onclick="mostrarPantalla('pantalla-principal')">Volver al Inicio</button>
+
+    <!-- Contenedor oculto que cambia según lo que mandes a imprimir -->
+    <div style="display:none;">
+      <div id="zona-impresion">
+        <h3 id="tk-titulo" style="text-align: center; margin-bottom: 0;">ENVÍOS NACIONALES</h3>
+        <p style="text-align: center; margin-top: 2px;">Guía: <strong id="tk-guia"></strong></p>
+        <hr>
+        <div class="destino-gigante" id="tk-destino"></div>
+        <hr>
+        <div id="tk-seccion-detalles">
+          <p><strong>De:</strong> <span id="tk-remitente"></span></p>
+          <p><strong>Para:</strong> <span id="tk-destinatario"></span></p>
+          <hr>
+          <p><strong>Flete Total:</strong> $<span id="tk-valor"></span></p>
+          <p><strong>Notas:</strong> <span id="tk-notas"></span></p>
+          <br>
+          <p style="text-align: center;">Firma: __________________</p>
+        </div>
+      </div>
     </div>
-    <br>
-    <button class="btn-grande" onclick="window.print()">🖨️ Imprimir Ticket / Sticker</button>
-    <button class="btn-secundario" onclick="mostrarPantalla('pantalla-principal')">Volver al Inicio</button>
   </div>
 
   <script>
-    // ==========================================
-    // ¡PEGA AQUÍ TU URL DE APPS SCRIPT!
-    // ==========================================
-    const API_URL = "https://script.google.com/macros/s/AKfycbylvsKT2RV5QqaXMy2RBpyPvw47F_o4uJI7YdiRnj5jTbzSTH8u_TC-3miHOFThm3Lgsw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzsDyUPF6mJHEnpDnnU5WMLmhElGBNIu9n4rhQX0JCEzVFf3QNS576ROgAvDagVF65JBg/exec";
+
+    let datosGuiaActual = {};
 
     function mostrarPantalla(id) {
       document.querySelectorAll('body > div').forEach(div => div.classList.add('oculto'));
@@ -127,7 +137,7 @@
         if(data.success) {
           mostrarPantalla('pantalla-principal');
         } else {
-          alert("Acceso denegado. Verifica que tu correo esté registrado en 'usuarios permitidos'.");
+          alert("Acceso denegado. Tu correo no está activo en 'usuarios permitidos'.");
         }
       } catch (error) {
         alert("Error de conexión con Google Sheets.");
@@ -142,46 +152,82 @@
 
     async function guardarEnvio() {
       const numGuia = Math.floor(Math.random() * 90000) + 10000;
-      const destino = document.getElementById('ciudad-destino').value;
-      const valor = document.getElementById('valor-total').value;
-      const empresa = document.getElementById('empresa-envio').value;
+      datosGuiaActual = {
+        guia: numGuia,
+        destino: document.getElementById('ciudad-destino').value,
+        remitente: document.getElementById('remitente').value,
+        destinatario: document.getElementById('destinatario').value,
+        valor: document.getElementById('valor-total').value,
+        empresa: document.getElementById('empresa-envio').value,
+        notas: document.getElementById('notas').value
+      };
       
-      await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ 
-          action: 'crear_guia', 
-          guia: numGuia,
-          empresa: empresa,
-          concepto: "Envío a " + destino,
-          valorTotal: valor,
-          metodoPago: "Efectivo",
-          notas: document.getElementById('notas').value
-        })
-      });
+      if(!datosGuiaActual.destino || !datosGuiaActual.valor) {
+        return alert("Por favor completa al menos la ciudad de destino y el valor.");
+      }
 
-      document.getElementById('tk-guia').innerText = "#" + numGuia;
-      document.getElementById('tk-destino').innerText = destino;
-      document.getElementById('tk-remitente').innerText = document.getElementById('remitente').value;
-      document.getElementById('tk-destinatario').innerText = document.getElementById('destinatario').value;
-      document.getElementById('tk-valor').innerText = valor;
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ 
+            action: 'crear_guia', 
+            guia: datosGuiaActual.guia,
+            empresa: datosGuiaActual.empresa,
+            concepto: "Envío a " + datosGuiaActual.destino,
+            valorTotal: datosGuiaActual.valor,
+            metodoPago: "Efectivo",
+            notas: datosGuiaActual.notas
+          })
+        });
+      } catch(e) {
+        console.error("Error al registrar en background", e);
+      }
 
       mostrarPantalla('pantalla-impresion');
+    }
+
+    function prepararTicketComun() {
+      document.getElementById('tk-guia').innerText = "#" + datosGuiaActual.guia;
+      document.getElementById('tk-destino').innerText = datosGuiaActual.destino;
+      document.getElementById('tk-remitente').innerText = datosGuiaActual.remitente;
+      document.getElementById('tk-destinatario').innerText = datosGuiaActual.destinatario;
+      document.getElementById('tk-valor').innerText = datosGuiaActual.valor;
+      document.getElementById('tk-notas').innerText = datosGuiaActual.notas || "Ninguna";
+    }
+
+    function imprimirGuiaCompleta() {
+      prepararTicketComun();
+      document.getElementById('tk-titulo').innerText = "GUÍA DE SEGUIMIENTO";
+      document.getElementById('tk-seccion-detalles').style.display = "block";
+      window.print();
+    }
+
+    function imprimirSticker() {
+      prepararTicketComun();
+      document.getElementById('tk-titulo').innerText = "STICKER DE CAJA";
+      // Ocultamos detalles financieros en el sticker para dejar la ciudad de destino enorme
+      document.getElementById('tk-seccion-detalles').style.display = "none";
+      window.print();
     }
 
     async function registrarAbono() {
       const valorAbono = document.getElementById('valor-abono').value;
       if(!valorAbono) return alert("Ingresa un valor");
 
-      await fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ 
-          action: 'registrar_abono', 
-          empresa: "Trascarga", 
-          valorAbono: valorAbono
-        })
-      });
-      alert("¡Abono registrado en la pestaña 'Ingresos' con éxito!");
-      document.getElementById('valor-abono').value = "";
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ 
+            action: 'registrar_abono', 
+            empresa: "Trascarga", 
+            valorAbono: valorAbono
+          })
+        });
+        alert("¡Abono registrado en la pestaña 'Ingresos' con éxito!");
+        document.getElementById('valor-abono').value = "";
+      } catch(e) {
+        alert("Error al registrar el abono.");
+      }
     }
   </script>
 </body>

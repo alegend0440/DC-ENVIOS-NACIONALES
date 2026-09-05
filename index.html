@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>App Interna - Envíos Nacionales</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 15px; background-color: #f0f2f5; margin: 0; }
+    h2 { color: #333; }
+    .oculto { display: none; }
+    .btn-grande { padding: 20px; font-size: 18px; font-weight: bold; width: 100%; margin: 10px 0; cursor: pointer; background-color: #0056b3; color: white; border: none; border-radius: 8px;}
+    .btn-secundario { padding: 15px; font-size: 16px; width: 100%; background-color: #28a745; color: white; border: none; border-radius: 8px; margin-top: 10px;}
+    .btn-rojo { background-color: #dc3545; }
+    .input-form { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+    .tabs { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; }
+    .tab { flex: 1; padding: 12px 5px; text-align: center; background: #ddd; cursor: pointer; border-radius: 5px 5px 0 0; font-size: 14px; white-space: nowrap; }
+    .tab.activa { background: #17a2b8; color: white; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #zona-impresion, #zona-impresion * { visibility: visible; }
+      #zona-impresion { position: absolute; left: 0; top: 0; width: 80mm; padding: 0; font-family: monospace; font-size: 14px; }
+      .destino-gigante { font-size: 28px; font-weight: bold; text-transform: uppercase; margin: 10px 0; text-align: center; }
+      hr { border-top: 1px dashed black; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA 1: Login -->
+  <div id="pantalla-login">
+    <h2>🔑 Control de Acceso</h2>
+    <p>Ingresa tu correo autorizado para operar el sistema.</p>
+    <input type="email" id="email-operario" class="input-form" placeholder="correo@ejemplo.com">
+    <button class="btn-grande" onclick="iniciarSesion()" id="btn-login">Iniciar Sesión</button>
+  </div>
+
+  <!-- PANTALLA 2: Menú Principal -->
+  <div id="pantalla-principal" class="oculto">
+    <h2>📍 Panel de Operaciones</h2>
+    <p>Operador activo | Impresora SAT: 🟢 Conectada</p>
+    <button class="btn-grande" onclick="mostrarPantalla('pantalla-formulario')">➕ Crear Nueva Guía</button>
+    <button class="btn-grande" style="background-color: #17a2b8;" onclick="mostrarPantalla('pantalla-liquidacion')">💰 Módulo de Liquidación</button>
+    <button class="btn-grande btn-rojo" onclick="cerrarSesion()">Cerrar Sesión</button>
+  </div>
+
+  <!-- PANTALLA 3: Formulario de Envíos -->
+  <div id="pantalla-formulario" class="oculto">
+    <h2>📦 Captura de Envío</h2>
+    <label>Empresa Remitente:</label>
+    <select id="empresa-envio" class="input-form">
+      <option value="Tu Empresa Principal">Tu Empresa Principal</option>
+      <option value="Trascarga">Trascarga</option>
+      <option value="Servientrega">Servientrega</option>
+      <option value="Arroz Roa">Arroz Roa</option>
+    </select>
+    <input type="text" id="remitente" placeholder="Remitente (Nombre y Tel)" class="input-form">
+    <input type="text" id="destinatario" placeholder="Destinatario (Nombre y Dirección)" class="input-form">
+    <input type="text" id="ciudad-destino" placeholder="Ciudad de Destino" class="input-form">
+    <input type="number" id="valor-total" placeholder="Valor Total Flete ($)" class="input-form">
+    <input type="text" id="notas" placeholder="Notas o Novedades (Opcional)" class="input-form">
+    <button class="btn-secundario" onclick="guardarEnvio()">💾 Guardar y Generar Etiquetas</button>
+    <button class="btn-secundario btn-rojo" onclick="mostrarPantalla('pantalla-principal')">Volver</button>
+  </div>
+
+  <!-- PANTALLA 4: Módulo de Liquidación -->
+  <div id="pantalla-liquidacion" class="oculto">
+    <h2>💼 Liquidación y Convenios</h2>
+    <div class="tabs">
+      <div class="tab activa">Tu Empresa</div>
+      <div class="tab">Trascarga</div>
+      <div class="tab">Servientrega</div>
+      <div class="tab">Arroz Roa</div>
+    </div>
+    <p>Registrar abono de la empresa seleccionada hacia tu caja:</p>
+    <input type="number" id="valor-abono" class="input-form" placeholder="Monto a abonar ($)">
+    <button class="btn-secundario" onclick="registrarAbono()">➕ Registrar Abono a Google Sheets</button>
+    <button class="btn-secundario btn-rojo" onclick="mostrarPantalla('pantalla-principal')">Volver</button>
+  </div>
+
+  <!-- PANTALLA 5: Centro de Impresión -->
+  <div id="pantalla-impresion" class="oculto">
+    <div id="zona-impresion">
+      <h3 style="text-align: center; margin-bottom: 0;">ENVÍOS NACIONALES</h3>
+      <p style="text-align: center; margin-top: 5px;">Guía: <strong id="tk-guia"></strong></p>
+      <hr>
+      <div class="destino-gigante" id="tk-destino"></div>
+      <hr>
+      <p><strong>De:</strong> <span id="tk-remitente"></span></p>
+      <p><strong>Para:</strong> <span id="tk-destinatario"></span></p>
+      <hr>
+      <p><strong>Flete Total:</strong> $<span id="tk-valor"></span></p>
+      <br><br>
+      <p style="text-align: center;">Firma: __________________</p>
+    </div>
+    <br>
+    <button class="btn-grande" onclick="window.print()">🖨️ Imprimir Ticket / Sticker</button>
+    <button class="btn-secundario" onclick="mostrarPantalla('pantalla-principal')">Volver al Inicio</button>
+  </div>
+
+  <script>
+    // ==========================================
+    // ¡PEGA AQUÍ TU URL DE APPS SCRIPT!
+    // ==========================================
+    const API_URL = "URL_DE_TU_APPS_SCRIPT_AQUI";
+
+    function mostrarPantalla(id) {
+      document.querySelectorAll('body > div').forEach(div => div.classList.add('oculto'));
+      document.getElementById(id).classList.remove('oculto');
+    }
+
+    async function iniciarSesion() {
+      const email = document.getElementById('email-operario').value;
+      const btn = document.getElementById('btn-login');
+      if(!email) return alert("Por favor ingresa un correo.");
+      
+      btn.innerText = "Verificando...";
+      try {
+        const respuesta = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'login', email: email })
+        });
+        const data = await respuesta.json();
+        
+        if(data.success) {
+          mostrarPantalla('pantalla-principal');
+        } else {
+          alert("Acceso denegado. Verifica que tu correo esté registrado en 'usuarios permitidos'.");
+        }
+      } catch (error) {
+        alert("Error de conexión con Google Sheets.");
+      }
+      btn.innerText = "Iniciar Sesión";
+    }
+
+    function cerrarSesion() {
+      document.getElementById('email-operario').value = "";
+      mostrarPantalla('pantalla-login');
+    }
+
+    async function guardarEnvio() {
+      const numGuia = Math.floor(Math.random() * 90000) + 10000;
+      const destino = document.getElementById('ciudad-destino').value;
+      const valor = document.getElementById('valor-total').value;
+      const empresa = document.getElementById('empresa-envio').value;
+      
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          action: 'crear_guia', 
+          guia: numGuia,
+          empresa: empresa,
+          concepto: "Envío a " + destino,
+          valorTotal: valor,
+          metodoPago: "Efectivo",
+          notas: document.getElementById('notas').value
+        })
+      });
+
+      document.getElementById('tk-guia').innerText = "#" + numGuia;
+      document.getElementById('tk-destino').innerText = destino;
+      document.getElementById('tk-remitente').innerText = document.getElementById('remitente').value;
+      document.getElementById('tk-destinatario').innerText = document.getElementById('destinatario').value;
+      document.getElementById('tk-valor').innerText = valor;
+
+      mostrarPantalla('pantalla-impresion');
+    }
+
+    async function registrarAbono() {
+      const valorAbono = document.getElementById('valor-abono').value;
+      if(!valorAbono) return alert("Ingresa un valor");
+
+      await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          action: 'registrar_abono', 
+          empresa: "Trascarga", 
+          valorAbono: valorAbono
+        })
+      });
+      alert("¡Abono registrado en la pestaña 'Ingresos' con éxito!");
+      document.getElementById('valor-abono').value = "";
+    }
+  </script>
+</body>
+</html>
